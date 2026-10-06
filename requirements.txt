@@ -1,0 +1,16 @@
+# Backend Dependencies for Flask, Neon PostgreSQL, and Elasticsearch
+flask>=3.0.0
+flask-cors>=4.0.0
+flask-sqlalchemy>=3.1.1
+psycopg2-binary>=2.9.9
+sqlalchemy>=2.0.0
+elasticsearch>=8.15.0,<9.0.0
+python-dotenv>=1.0.1
+requests>=2.31.0
+tqdm>=4.66.5
+pytest>=8.0.0
+pytest-mock>=3.12.0
+
+# Optional Machine Learning Semantic Search:
+# sentence-transformers>=3.0.0
+# torch>=2.2.0
