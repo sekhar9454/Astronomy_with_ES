@@ -4,9 +4,38 @@ Astronomy Picture of the Day (APOD) search engine powered by **React.js** (style
 
 ---
 
-## 🚀 Execution Commands
+## Quick Start (after first-time setup)
 
-Here are all the commands needed to install, seed, run, and test the application:
+Once the setup steps below have been done once, start the project from the repository root with:
+
+```bash
+# 1. Start Elasticsearch (needed after every reboot)
+docker start elasticsearch
+
+# 2. Start the backend (terminal 1)
+source .venv/bin/activate
+PYTHONPATH=. python3 -m app_backend.app
+
+# 3. Start the frontend (terminal 2)
+cd frontend-react
+npm run dev
+```
+
+Then open **http://localhost:3000**. Backend check: http://localhost:5000/api/v1/health should show `"database":"connected","elasticsearch":"connected"`.
+
+If a server fails with "address already in use", an old copy is still running. Stop it and start again:
+```bash
+pkill -f "app_backend.app"                        # backend on port 5000
+pkill -f "frontend-react/node_modules/.bin/vite"  # frontend on port 3000
+```
+
+Re-seeding is only needed if the Elasticsearch container was recreated or `app_backend/apod.json` changed (step 3 below).
+
+---
+
+## Execution Commands
+
+Here are all the commands needed to install, seed, run, and test the application for the first time:
 
 ### 1. Environment Setup & Dependency Installation
 ```bash
@@ -23,7 +52,24 @@ cp .env.example .env
 
 > `.env` is git-ignored — never commit real credentials. Only `.env.example` (placeholders) is tracked.
 
-### 2. Database Seeding & Elasticsearch Indexing
+### 2. Install Elasticsearch
+Runs Elasticsearch 8.15.0 in Docker as a single node on `http://localhost:9200`, with security disabled for local development (matches `ELASTICSEARCH_NODE` in `.env.example`):
+```bash
+docker run -d \
+  --name elasticsearch \
+  -p 9200:9200 \
+  -p 9300:9300 \
+  -e "discovery.type=single-node" \
+  -e "xpack.security.enabled=false" \
+  docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+
+curl http://localhost:9200   # should print the cluster info once it has started (~20 s)
+```
+Later sessions: `docker start elasticsearch` / `docker stop elasticsearch`. If port 9200 is already taken by another Elasticsearch, stop that one first.
+
+> The container has no volume, so its indices live inside the container: `docker rm elasticsearch` deletes them. Re-run the seeder (step 3) to rebuild them from PostgreSQL. If Elasticsearch is not running, the app still works using the PostgreSQL fallback.
+
+### 3. Database Seeding & Elasticsearch Indexing
 Loads the APOD records from [`app_backend/apod.json`](app_backend/apod.json) (3,333 records with NASA image URLs) into PostgreSQL and bulk-indexes them into Elasticsearch (`apod`, `apod_n_gram`, `apod_embedding` indices):
 ```bash
 source .venv/bin/activate
@@ -34,14 +80,14 @@ Other flags: `--no-recreate-es` (keep existing ES indices), `--no-embeddings` (s
 
 Records with an empty title or explanation are skipped (6 in the current dataset), so the table ends up with 3,327 rows.
 
-### 3. Start Flask Backend API Server
+### 4. Start Flask Backend API Server
 Runs the REST API server at `http://localhost:5000` (all endpoints are under `/api/v1`, e.g. `http://localhost:5000/api/v1/health`):
 ```bash
 source .venv/bin/activate
 PYTHONPATH=. python3 -m app_backend.app
 ```
 
-### 4. Start React Frontend Server
+### 5. Start React Frontend Server
 Runs the Vite React development server at `http://localhost:3000`:
 ```bash
 cd frontend-react
@@ -49,7 +95,7 @@ npm install   # First time only
 npm run dev
 ```
 
-### 5. Run Automated Tests
+### 6. Run Automated Tests
 Runs the Pytest integration suite covering health checks, CRUD, search, planets, and fallback mechanisms:
 ```bash
 source .venv/bin/activate

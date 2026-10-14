@@ -194,6 +194,9 @@ Error response shapes: document endpoints return `{"error": "<message>"}`; plane
 ## 7. Operational & Development Commands
 
 ```bash
+# 0. Start Elasticsearch 8.15.0 in Docker (first time: docker run; afterwards: docker start elasticsearch)
+docker run -d --name elasticsearch -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+
 # 1. Activate Python Virtual Environment
 source .venv/bin/activate
 
