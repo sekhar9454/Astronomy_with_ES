@@ -1,6 +1,6 @@
 # APOD Astronomy Search Engine
 
-Enterprise Astronomy Picture of the Day (APOD) search engine powered by **React.js**, **Flask**, **Neon PostgreSQL**, and **Elasticsearch (v8.15)**.
+Astronomy Picture of the Day (APOD) search engine powered by **React.js** (styled with **Tailwind CSS**), **Flask**, **Neon PostgreSQL**, and **Elasticsearch (v8.15)**.
 
 ---
 
@@ -16,17 +16,26 @@ source .venv/bin/activate
 
 # Install backend dependencies
 pip install -r requirements.txt
+
+# Create your local environment file and fill in DATABASE_URL, SECRET_KEY, etc.
+cp .env.example .env
 ```
+
+> `.env` is git-ignored — never commit real credentials. Only `.env.example` (placeholders) is tracked.
 
 ### 2. Database Seeding & Elasticsearch Indexing
-Populates Neon PostgreSQL database with 3,333 APOD records and bulk-indexes into Elasticsearch (`apod` and `apod_n_gram` indices):
+Loads the APOD records from [`app_backend/apod.json`](app_backend/apod.json) (3,333 records with NASA image URLs) into PostgreSQL and bulk-indexes them into Elasticsearch (`apod`, `apod_n_gram`, `apod_embedding` indices):
 ```bash
 source .venv/bin/activate
-python3 -m app_backend.seed_data
+PYTHONPATH=. python3 -m app_backend.seed_data          # insert new records, recreate ES indices
+PYTHONPATH=. python3 -m app_backend.seed_data --drop   # wipe the apod_documents table first, then re-seed
 ```
+Other flags: `--no-recreate-es` (keep existing ES indices), `--no-embeddings` (skip vector embeddings; they are also skipped automatically when `sentence-transformers` is not installed).
+
+Records with an empty title or explanation are skipped (6 in the current dataset), so the table ends up with 3,327 rows.
 
 ### 3. Start Flask Backend API Server
-Runs the REST API server at `http://localhost:5000`:
+Runs the REST API server at `http://localhost:5000` (all endpoints are under `/api/v1`, e.g. `http://localhost:5000/api/v1/health`):
 ```bash
 source .venv/bin/activate
 PYTHONPATH=. python3 -m app_backend.app
@@ -41,11 +50,40 @@ npm run dev
 ```
 
 ### 5. Run Automated Tests
-Runs the Pytest integration suite covering health checks, CRUD, search, and fallback mechanisms:
+Runs the Pytest integration suite covering health checks, CRUD, search, planets, and fallback mechanisms:
 ```bash
 source .venv/bin/activate
-PYTHONPATH=. pytest tests/test_backend_api.py -v
+PYTHONPATH=. pytest tests/ -v
 ```
+
+> ⚠️ The tests use the database configured in `.env` (there is no separate test database). They create and then delete their own test rows (dates in 2099, planets named `… Test`), but the outbox test's cleanup deletes **all** `PLANET_CREATED` outbox events.
+
+---
+
+## 🗂️ Project Structure
+
+```
+app_backend/
+├── app.py              # Flask app factory: config, CORS, DB, register_routes(app)
+├── routes/             # HTTP layer only: Blueprints, request parsing, JSON responses
+│   ├── __init__.py     # Parent /api/v1 Blueprint + register_routes(app)
+│   ├── health_routes.py, search_routes.py, document_routes.py, planet_routes.py
+├── controllers/        # Business logic: DB queries, Elasticsearch calls, validation
+│   ├── errors.py       # ServiceError (message, error_code, status_code, details)
+│   ├── health_controller.py, search_controller.py, document_controller.py, planet_controller.py
+├── es_client.py        # Elasticsearch wrapper (indices, bulk indexing, search, aggregations)
+├── models.py           # SQLAlchemy models: ApodDocument, Planet, OutboxEvent
+├── apod.json           # Seed dataset
+└── seed_data.py        # Seeding / indexing script
+frontend-react/
+├── vite.config.js      # React + Tailwind (@tailwindcss/vite) plugins, dev server on port 3000
+└── src/
+    ├── index.css       # Tailwind entry: @import "tailwindcss" + @theme tokens (colors, font, breakpoints, animations)
+    ├── styles/text.js  # Shared responsive text-size class strings
+    └── components/     # React components, styled only with Tailwind utility classes
+```
+
+**Routes vs. controllers:** route functions read query/body parameters, call one controller function, and turn the result into `jsonify(...)` plus a status code. Controllers never touch Flask's `request` or `jsonify`; they return plain data or raise `ServiceError`, which the route layer maps to an error response.
 
 ---
 
@@ -64,8 +102,8 @@ When a user types a search query (e.g. `"galaxy"`) into the search bar, the requ
                                                      |
                                                      v
 +-----------------------------------------------------------------------------------------------------------+
-|                                      2. FLASK BACKEND API ROUTER                                          |
-| app_backend/routes/search_routes.py :: regular_search() parses params -> search_controller.regular_search()|
+|                                      2. FLASK ROUTE + CONTROLLER                                          |
+| routes/search_routes.py :: regular_search() parses params -> controllers/search_controller.regular_search()|
 +----------------------------------------------------+------------------------------------------------------+
                                                      |
                                                      | Tries Elasticsearch First
@@ -73,16 +111,16 @@ When a user types a search query (e.g. `"galaxy"`) into the search bar, the requ
 +-----------------------------------------------------------------------------------------------------------+
 |                                   3. ELASTICSEARCH SEARCH ENGINE LAYER                                    |
 | app_backend/es_client.py :: ESClientWrapper.search_regular()                                              |
-| - Multi-match search across title & explanation in `apod` / `apod_n_gram` indices                         |
+| - Multi-match search over `apod` (or `apod_n_gram`) + `planets_index`                                     |
 | - Deduplicates hits by (title, date) key to ensure single-instance cards                                  |
 +----------------------------------------------------+------------------------------------------------------+
                                                      |
                                                      | (If ES is offline/unreachable)
-                                                     v (Fallback)
+                                                     v (Fallback, in search_controller.py)
 +-----------------------------------------------------------------------------------------------------------+
 |                                   4. NEON POSTGRESQL DATABASE FALLBACK                                    |
-| app_backend/models.py :: ApodDocument                                                                     |
-| - Queries Neon PostgreSQL DB: ILIKE %galaxy% across title/explanation                                     |
+| app_backend/models.py :: ApodDocument, Planet                                                             |
+| - ILIKE %galaxy% across APOD title/explanation and planet name/description/atmosphere                     |
 +----------------------------------------------------+------------------------------------------------------+
                                                      |
                                          JSON Response Payload:
@@ -100,32 +138,37 @@ When a user types a search query (e.g. `"galaxy"`) into the search bar, the requ
 ### File-by-File Execution Sequence
 
 #### Layer 1: Frontend User Interaction (`frontend-react/`)
-- **[App.jsx](file:///home/sanskar/code/final_fs_dbms/frontend-react/src/App.jsx)**: Top-level container holding `searchResults` state.
-- **[SearchSection.jsx](file:///home/sanskar/code/final_fs_dbms/frontend-react/src/components/SearchSection.jsx)**:
+- **[App.jsx](frontend-react/src/App.jsx)**: Top-level container holding `searchResults` state.
+- **[SearchSection.jsx](frontend-react/src/components/SearchSection.jsx)**:
   - `handleQueryChange(e)`: Captures search input string `"galaxy"`.
   - `performSearch()`: Checks that query is non-empty (`query.trim()`). Constructs request URL:
     `http://localhost:5000/api/v1/regular_search?search_query=galaxy&skip=0&limit=10`
   - Sends asynchronous HTTP GET request via `axios.get()`.
 
-#### Layer 2: Flask API Gateway (`app_backend/`)
-- **[app.py](file:///home/sanskar/code/final_fs_dbms/app_backend/app.py)**: Initializes Flask app, configures CORS headers (`CORS(app)`), and registers API blueprint.
-- **[routes/search_routes.py](file:///home/sanskar/code/final_fs_dbms/app_backend/routes/search_routes.py)**:
+#### Layer 2: Flask Routes & Controllers (`app_backend/`)
+- **[app.py](app_backend/app.py)**: Initializes Flask app, configures CORS for `/api/*`, and calls `register_routes(app)`.
+- **[routes/search_routes.py](app_backend/routes/search_routes.py)**:
   - Endpoint handler: `@search_bp.route('/regular_search') def regular_search()`
-  - Reads query parameters: `search_query="galaxy"`, `skip=0`, `limit=10`, `tokenizer="standard"`, and passes them to the controller.
-- **[controllers/search_controller.py](file:///home/sanskar/code/final_fs_dbms/app_backend/controllers/search_controller.py)**:
-  - Checks if query is non-empty; delegates search logic to `es_client.search_regular()`, falling back to PostgreSQL.
+  - Reads query parameters `search_query`, `skip`, `limit`, `year`, `tokenizer` and passes them to the controller.
+- **[controllers/search_controller.py](app_backend/controllers/search_controller.py)**:
+  - Returns an empty result if the query is blank; otherwise delegates to `es_client.search_regular()`, falling back to PostgreSQL if Elasticsearch returns nothing.
 
 #### Layer 3: Elasticsearch Search Engine (`app_backend/es_client.py`)
-- **[es_client.py](file:///home/sanskar/code/final_fs_dbms/app_backend/es_client.py)**:
+- **[es_client.py](app_backend/es_client.py)**:
   - Method: `search_regular(query='galaxy', skip=0, limit=10, year=None, tokenizer='standard')`
-  - Formulates Elasticsearch DSL query:
+  - Formulates Elasticsearch DSL query (searched indices: `apod` + `planets_index`, or `apod_n_gram` + `planets_index` when `tokenizer=n_gram`):
     ```json
     {
       "from": 0,
-      "size": 10,
+      "size": 20,
       "query": {
         "bool": {
-          "must": [{ "multi_match": { "query": "galaxy", "fields": ["title^2", "explanation"] } }]
+          "must": [{ "multi_match": {
+            "query": "galaxy",
+            "fields": ["title^2", "name^2", "explanation", "description", "atmosphere_summary"],
+            "fuzziness": "AUTO"
+          } }],
+          "filter": []
         }
       }
     }
@@ -133,35 +176,34 @@ When a user types a search query (e.g. `"galaxy"`) into the search bar, the requ
   - Executes request against local Elasticsearch 8.15.0 node (`http://localhost:9200`).
   - **Deduplication**: Filters raw Elasticsearch hits using a `(title, date)` tuple set so each card appears exactly once.
 
-#### Layer 4: Relational Database Fallback (`app_backend/models.py`)
-- **[config.py](file:///home/sanskar/code/final_fs_dbms/app_backend/config.py)**: Translates `DATABASE_URL` to `postgresql+psycopg2://` format.
-- **[models.py](file:///home/sanskar/code/final_fs_dbms/app_backend/models.py)**:
-  - Class `ApodDocument(db.Model)`
-  - If Elasticsearch is offline, executes SQL fallback query against Neon PostgreSQL:
+#### Layer 4: Relational Database Fallback (`controllers/search_controller.py`)
+- **[config.py](app_backend/config.py)**: Translates `DATABASE_URL` to `postgresql+psycopg2://` format (falls back to SQLite `apod.db` if `DATABASE_URL` is unset).
+- **[search_controller.py](app_backend/controllers/search_controller.py)**: If Elasticsearch is offline, queries [models.py](app_backend/models.py) `ApodDocument` and `Planet` directly:
     ```sql
-    SELECT * FROM apod_documents 
-    WHERE title ILIKE '%galaxy%' OR explanation ILIKE '%galaxy%' 
+    SELECT * FROM apod_documents
+    WHERE title ILIKE '%galaxy%' OR explanation ILIKE '%galaxy%'
     ORDER BY date DESC LIMIT 10 OFFSET 0;
     ```
+  Matching planets are mapped into the same card shape and merged ahead of the APOD results.
 
 #### Layer 5: Response Formatting & UI Display (`frontend-react/`)
-- **[routes/search_routes.py](file:///home/sanskar/code/final_fs_dbms/app_backend/routes/search_routes.py)**: Formats response as JSON:
+- **[routes/search_routes.py](app_backend/routes/search_routes.py)**: Formats the controller's result as JSON:
   ```json
   {
-    "total": 150,
+    "total": 10,
     "max_pages": 15,
-    "hits": [{ "id": 101, "title": "Spiral Galaxy NGC 1365", "date": "2024-11-13", ... }],
+    "hits": [{ "id": 101, "title": "Spiral Galaxy NGC 1365", "date": "2024-11-13", "image_url": "https://images-assets.nasa.gov/...", ... }],
     "documents": [{ ... }]
   }
   ```
-- **[SearchSection.jsx](file:///home/sanskar/code/final_fs_dbms/frontend-react/src/components/SearchSection.jsx)**: Receives JSON payload and calls `onSearchResults()`.
-- **[GallerySection.jsx](file:///home/sanskar/code/final_fs_dbms/frontend-react/src/components/GallerySection.jsx)**: Applies secondary deduplication, displays skeleton loaders, renders image cards, titles, descriptions, and binds modal popover click events.
+- **[SearchSection.jsx](frontend-react/src/components/SearchSection.jsx)**: Receives JSON payload and calls `onSearchResults()`.
+- **[GallerySection.jsx](frontend-react/src/components/GallerySection.jsx)**: Applies secondary deduplication, displays shimmer loaders, renders image cards, titles, descriptions, and opens the image popover on click.
 
 ---
 
 ## ⚙️ Architecture & Tech Stack Summary
 
-- **Frontend**: React.js (Vite, React 18, Axios, Lucide Icons, Glassmorphism CSS).
-- **Backend**: Flask RESTful API (Flask-CORS, Flask-SQLAlchemy, Blueprints).
-- **Primary Database**: PostgreSQL (Hosted serverless on Neon DB).
-- **Search Engine**: Elasticsearch 8.15.0 (Standard multi-match, edge n-gram autocomplete, year histogram aggregations).
+- **Frontend**: React 18 (Vite 5, Axios), **Tailwind CSS v4** via `@tailwindcss/vite` (no hand-written CSS beyond the Tailwind entry/theme in `index.css`), Font Awesome icons, Roboto Condensed font.
+- **Backend**: Flask REST API (Flask-CORS, Flask-SQLAlchemy) organised as **routes** (Blueprints, HTTP only) → **controllers** (business logic).
+- **Primary Database**: PostgreSQL (hosted serverless on Neon DB), with SQLite fallback when `DATABASE_URL` is unset.
+- **Search Engine**: Elasticsearch 8.15.0 (standard multi-match with fuzziness, edge n-gram index, year histogram aggregations). Planet creation uses an outbox table as fallback when Elasticsearch is unavailable.

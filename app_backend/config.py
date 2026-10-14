@@ -20,6 +20,8 @@ class Config:
         SQLALCHEMY_DATABASE_URI = raw_db_url
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Check pooled connections before use; Neon closes idle SSL connections
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 
     # Elasticsearch configuration
     ELASTICSEARCH_NODE = os.environ.get('ELASTICSEARCH_NODE', os.environ.get('ELASTICSEARCH_URL', 'http://localhost:9200'))

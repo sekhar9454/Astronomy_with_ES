@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ImagePopover from './ImagePopover';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
 const GallerySection = ({ searchResults }) => {
   const [imageLoaded, setImageLoaded] = useState({});
   const [showPopover, setShowPopover] = useState(false);
@@ -42,7 +44,7 @@ const GallerySection = ({ searchResults }) => {
     if (!confirmed) return;
 
     try {
-      await axios.delete(`/api/v1/documents/${docId}`);
+      await axios.delete(`${API_BASE_URL}/api/v1/documents/${docId}`);
       setLocalResults((prev) => prev.filter((item) => {
         const source = item._source || item || {};
         return source.id !== docId && item.id !== docId;

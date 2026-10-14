@@ -7,6 +7,9 @@ import { MEDIUM_TEXT, SMALL_TEXT } from '../styles/text';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
+// Maps tokenizer dropdown labels to the values the backend expects
+const TOKENIZER_PARAMS = { Standard: 'standard', 'N-Gram': 'n_gram' };
+
 const SearchSection = ({ onSearchResults }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [pageSize, setPageSize] = useState(10);
@@ -29,7 +32,7 @@ const SearchSection = ({ onSearchResults }) => {
     try {
       const endpoint = `${API_BASE_URL}/api/v1/get_docs_per_year_count?search_query=${encodeURIComponent(
         query.trim()
-      )}&tokenizer=${tokenizer}`;
+      )}&tokenizer=${TOKENIZER_PARAMS[tokenizer]}`;
       const res = await axios.get(endpoint);
       const docsPerYear = res.data?.docs_per_year || res.data?.year_counts || {};
       const formatted = Object.entries(docsPerYear).map(
@@ -64,7 +67,7 @@ const SearchSection = ({ onSearchResults }) => {
       } else {
         endpoint = `${API_BASE_URL}/api/v1/regular_search?search_query=${encodeURIComponent(
           query.trim()
-        )}&skip=${skip}&limit=${size}&year=${pureYear}&tokenizer=${tokenizer}`;
+        )}&skip=${skip}&limit=${size}&year=${pureYear}&tokenizer=${TOKENIZER_PARAMS[tokenizer]}`;
       }
 
       try {
