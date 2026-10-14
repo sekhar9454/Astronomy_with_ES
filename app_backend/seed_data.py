@@ -11,7 +11,7 @@ from app_backend.es_client import es_client
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-DATA_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'apod.json')
+DATA_FILE_PATH = os.path.join(os.path.dirname(__file__), 'apod.json')
 
 def seed_database_and_es(drop_existing=False, recreate_es=True, generate_embeddings=True):
     app = create_app()
@@ -57,8 +57,8 @@ def seed_database_and_es(drop_existing=False, recreate_es=True, generate_embeddi
             if not title or not explanation:
                 continue
 
-            image_url = item.get('hdurl') or item.get('url') or ''
-            authors = item.get('copyright') or item.get('author') or ''
+            image_url = item.get('image_url') or item.get('hdurl') or item.get('url') or ''
+            authors = (item.get('authors') or item.get('copyright') or item.get('author') or '').strip()
 
             doc = ApodDocument(
                 date=doc_date,
