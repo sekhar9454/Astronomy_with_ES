@@ -1,4 +1,9 @@
 import React from 'react';
+import { MEDIUM_TEXT } from '../styles/text';
+
+const SELECT =
+  'h-12 w-full cursor-pointer rounded-none border border-accent/30 bg-space/80 px-4 text-base text-white outline-none transition-colors duration-300 focus:border-primary lg:h-16 lg:text-[1.2rem] [&_option]:bg-space [&_option]:text-white';
+const PAGE_BTN = `flex h-12 cursor-pointer items-center gap-2 rounded-none border border-accent/20 bg-transparent px-4 py-2 text-white transition-colors duration-300 enabled:hover:border-primary enabled:hover:bg-accent/20 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-[#666] lg:h-16 lg:px-6 lg:py-4 ${MEDIUM_TEXT}`;
 
 const PaginationBar = ({
   currentPage,
@@ -20,110 +25,13 @@ const PaginationBar = ({
 
   return (
     <>
-      <style>
-        {`
-          .pagination-bar-container {
-            width: 100%;
-            border: 1px solid rgba(234, 94, 19, 0.2);
-            background: rgba(255, 255, 255, 0.05);
-            padding: 1.5rem;
-            margin-top: 2rem;
-          }
-          .pagination-bar-container .row {
-            display: flex;
-            gap: 1.25rem;
-            flex-wrap: wrap;
-            justify-content: space-between;
-          }
-          .filter-group {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
-            flex-grow: 1;
-          }
-          .custom-select {
-            border-radius: 0;
-            height: 4rem;
-            background: rgba(8, 14, 26, 0.8);
-            border: 1px solid rgba(234, 94, 19, 0.3);
-            color: white;
-            width: 100%;
-            padding: 0 1rem;
-            font-size: 1.2rem;
-            outline: none;
-            cursor: pointer;
-            transition: border-color 0.3s;
-          }
-          .custom-select:focus {
-            border-color: var(--primary-color);
-          }
-          .custom-select option {
-            background-color: #080e1a;
-            color: white;
-          }
-          .pagination-buttons {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            width: 100%;
-            gap: 0.5rem;
-            margin-top: 3rem;
-          }
-          .pagination-btn {
-            background: transparent;
-            height: 4rem;
-            border: 1px solid rgba(234, 94, 19, 0.2);
-            padding: 1rem 1.5rem;
-            border-radius: 0;
-            cursor: pointer;
-            color: white;
-            transition: background-color 0.3s ease, color 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-          }
-          .pagination-btn:disabled {
-            cursor: not-allowed;
-            color: #666;
-            border-color: rgba(255, 255, 255, 0.1);
-          }
-          .pagination-btn:hover:not(:disabled) {
-            background-color: rgba(234, 94, 19, 0.2);
-            border-color: var(--primary-color);
-          }
-          .current-page {
-            margin: 0 1.25rem;
-            color: #fff;
-          }
-          @media screen and (max-width: 992px) {
-            .custom-select {
-              height: 3rem;
-              font-size: 1rem;
-            }
-            .pagination-btn {
-              height: 3rem;
-              padding: 0.5rem 1rem;
-            }
-          }
-          @media screen and (max-width: 576px) {
-            .pagination-btn .button-text {
-              display: none;
-            }
-            .pagination-buttons {
-              margin-top: 1.5rem;
-              justify-content: center;
-            }
-          }
-        `}
-      </style>
-      <div className="pagination-bar-container">
-        <div className="row">
+      <div className="mt-8 w-full border border-accent/20 bg-white/5 p-6">
+        <div className="flex flex-wrap justify-between gap-5">
           {/* Year Filter */}
-          <div className="filter-group">
-            <span className="medium-text">Year</span>
+          <div className="flex grow flex-col items-start gap-2">
+            <span className={MEDIUM_TEXT}>Year</span>
             <select
-              className="custom-select"
+              className={SELECT}
               value={selectedYear || ''}
               onChange={(e) => onYearChange(e.target.value || null)}
               title="Filter by year"
@@ -138,10 +46,10 @@ const PaginationBar = ({
           </div>
 
           {/* Search Method */}
-          <div className="filter-group">
-            <span className="medium-text">Search method</span>
+          <div className="flex grow flex-col items-start gap-2">
+            <span className={MEDIUM_TEXT}>Search method</span>
             <select
-              className="custom-select"
+              className={SELECT}
               value={selectedSearchMethod}
               onChange={(e) => onSearchMethodChange(e.target.value)}
               title="Change search method"
@@ -156,10 +64,10 @@ const PaginationBar = ({
 
           {/* Tokenizer */}
           {selectedSearchMethod === 'Regular search' && (
-            <div className="filter-group">
-              <span className="medium-text">Tokenizer</span>
+            <div className="flex grow flex-col items-start gap-2">
+              <span className={MEDIUM_TEXT}>Tokenizer</span>
               <select
-                className="custom-select"
+                className={SELECT}
                 value={selectedTokenizer}
                 onChange={(e) => onTokenizerChange(e.target.value)}
                 title="Change tokenizer"
@@ -174,10 +82,10 @@ const PaginationBar = ({
           )}
 
           {/* Page Size */}
-          <div className="filter-group">
-            <span className="medium-text">Items per page</span>
+          <div className="flex grow flex-col items-start gap-2">
+            <span className={MEDIUM_TEXT}>Items per page</span>
             <select
-              className="custom-select"
+              className={SELECT}
               value={selectedPageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
               title="Change items per page"
@@ -192,46 +100,46 @@ const PaginationBar = ({
         </div>
 
         {/* Buttons */}
-        <div className="pagination-buttons">
+        <div className="mt-6 flex w-full items-center justify-center gap-2 sm:mt-12 sm:justify-end">
           <button
             disabled={currentPage <= 1}
             onClick={() => onPageChange(1)}
-            className="pagination-btn medium-text"
+            className={PAGE_BTN}
             title="First page"
           >
             <i className="fas fa-angle-double-left"></i>
-            <span className="button-text">First</span>
+            <span className="hidden sm:inline">First</span>
           </button>
           <button
             disabled={currentPage <= 1}
             onClick={() => onPageChange(currentPage - 1)}
-            className="pagination-btn medium-text"
+            className={PAGE_BTN}
             title="Previous page"
           >
             <i className="fas fa-chevron-left"></i>
-            <span className="button-text">Previous</span>
+            <span className="hidden sm:inline">Previous</span>
           </button>
 
-          <span className="current-page medium-text">
+          <span className={`mx-5 text-white ${MEDIUM_TEXT}`}>
             {currentPage} / {maxPages || 1}
           </span>
 
           <button
             disabled={currentPage >= (maxPages || 1)}
             onClick={() => onPageChange(currentPage + 1)}
-            className="pagination-btn medium-text"
+            className={PAGE_BTN}
             title="Next page"
           >
-            <span className="button-text">Next</span>
+            <span className="hidden sm:inline">Next</span>
             <i className="fas fa-chevron-right"></i>
           </button>
           <button
             disabled={currentPage >= (maxPages || 1)}
             onClick={() => onPageChange(maxPages)}
-            className="pagination-btn medium-text"
+            className={PAGE_BTN}
             title="Last page"
           >
-            <span className="button-text">Last</span>
+            <span className="hidden sm:inline">Last</span>
             <i className="fas fa-angle-double-right"></i>
           </button>
         </div>

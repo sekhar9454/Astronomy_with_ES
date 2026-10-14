@@ -1,0 +1,32 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Local databases (Flask instance folder, SQLite)
+instance/
+*.db
+*.sqlite3
+
+# Node / frontend
+node_modules/
+dist/
+*.local
+
+# Logs and backups
+*.log
+npm-debug.log*
+*.bak
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store

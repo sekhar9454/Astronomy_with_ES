@@ -10,7 +10,7 @@ function App() {
   return (
     <>
       <StarsBackground />
-      <div className="container">
+      <div className="flex flex-col items-center mx-4 xs:mx-8 sm:mx-12 lg:mx-20 xl:mx-48 2xl:mx-80">
         <SearchSection onSearchResults={setSearchResults} />
         <GallerySection searchResults={searchResults} />
         <BackToTop />

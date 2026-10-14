@@ -3,6 +3,7 @@ import axios from 'axios';
 import PaginationBar from './PaginationBar';
 import CreatePlanetModal from './CreatePlanetModal';
 import galaxyLogo from '../assets/galaxy_logo_white.svg';
+import { MEDIUM_TEXT, SMALL_TEXT } from '../styles/text';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
@@ -164,149 +165,39 @@ const SearchSection = ({ onSearchResults }) => {
 
   return (
     <>
-      <style>
-        {`
-          .search-header-container {
-            margin-top: 10rem;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-          }
-          .image-logo-container {
-            display: block;
-            width: 15rem;
-            margin-bottom: 8rem;
-          }
-          .image-logo {
-            display: block;
-            width: 100%;
-          }
-          .search-input-wrapper {
-            width: 100%;
-            position: relative;
-            display: inline-block;
-          }
-          .input-text-field {
-            width: 100%;
-            height: 6rem;
-            border-radius: 0;
-            background: rgba(255, 255, 255, 0.08);
-            border: 2px solid rgba(234, 94, 19, 0.3);
-            color: #fff;
-            padding: 0 4rem 0 1.5rem;
-            font-size: 1.75rem;
-            outline: none;
-            transition: border-color 0.3s;
-          }
-          .input-text-field:focus {
-            border-color: var(--primary-color);
-          }
-          .icon-actions {
-            position: absolute;
-            right: 1.5rem;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            gap: 0.75rem;
-            align-items: center;
-          }
-          .clear-icon-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--primary-color);
-            transition: color 0.3s ease;
-            font-size: 2.5rem;
-            display: flex;
-            align-items: center;
-          }
-          .clear-icon-btn:hover {
-            color: #fff;
-          }
-          .error-msg {
-            margin-bottom: 0.5rem;
-            color: rgb(255, 80, 80);
-            padding-left: 0.5rem;
-            align-self: flex-start;
-          }
-          .no-results-msg {
-            margin-top: 2rem;
-            text-align: center;
-            color: #aaa;
-          }
-          .no-results-msg i {
-            margin-right: 0.5rem;
-          }
-          @media screen and (max-width: 1920px) {
-            .search-header-container { margin-top: 8rem; }
-            .image-logo-container { width: 10rem; margin-bottom: 5rem; }
-            .input-text-field { height: 4rem; font-size: 1.25rem; }
-            .clear-icon-btn { font-size: 1.8rem; }
-          }
-          @media screen and (max-width: 992px) {
-            .search-header-container { margin-top: 6rem; }
-            .image-logo-container { width: 7rem; margin-bottom: 3rem; }
-            .input-text-field { height: 3.5rem; font-size: 1.1rem; }
-          }
-          @media screen and (max-width: 576px) {
-            .search-header-container { margin-top: 4rem; }
-            .image-logo-container { width: 4.5rem; }
-          .add-planet-btn {
-            margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, rgba(234, 94, 19, 0.2) 0%, rgba(234, 94, 19, 0.4) 100%);
-            border: 1px solid rgba(234, 94, 19, 0.6);
-            color: #fff;
-            padding: 0.6rem 1.25rem;
-            border-radius: 20px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.25s ease;
-          }
-          .add-planet-btn:hover {
-            background: linear-gradient(135deg, #ea5e13 0%, #ff8c00 100%);
-            box-shadow: 0 0 15px rgba(234, 94, 19, 0.5);
-            transform: translateY(-2px);
-          }
-        `}
-      </style>
-      <div className="search-header-container">
-        <a href="/" className="image-logo-container">
+      <div className="mt-16 flex w-full flex-col items-center sm:mt-24 lg:mt-32 2xl:mt-40">
+        <a href="/" className="mb-12 block w-18 sm:w-28 lg:mb-20 lg:w-40 2xl:mb-32 2xl:w-60">
           <img
             src={galaxyLogo}
-            className="image-logo"
+            className="block w-full"
             alt="My Universe Hub logo"
           />
         </a>
 
         <button
-          className="add-planet-btn"
+          className="mb-6 inline-flex cursor-pointer items-center gap-2 rounded-[20px] border border-accent/60 bg-linear-135 from-accent/20 to-accent/40 px-5 py-[0.6rem] text-base font-semibold text-white transition-all duration-[250ms] hover:-translate-y-0.5 hover:from-accent hover:to-[#ff8c00] hover:shadow-[0_0_15px_rgba(234,94,19,0.5)]"
           onClick={() => setShowPlanetModal(true)}
         >
           <i className="fas fa-plus-circle"></i> Add Planet Record
         </button>
 
         {errorMessage && (
-          <div className="error-msg small-text">{errorMessage}</div>
+          <div className={`mb-2 self-start pl-2 text-[rgb(255,80,80)] ${SMALL_TEXT}`}>{errorMessage}</div>
         )}
 
-        <div className="search-input-wrapper">
+        <div className="relative inline-block w-full">
           <input
-            className="input-text-field"
+            className="h-14 w-full rounded-none border-2 border-accent/30 bg-white/8 pr-16 pl-6 text-[1.1rem] text-white outline-none transition-colors duration-300 focus:border-primary lg:h-16 lg:text-xl 2xl:h-24 2xl:text-[1.75rem]"
             type="text"
             value={searchQuery}
             onChange={handleQueryChange}
             placeholder="Search astronomy images or planets, e.g. Kepler, Andromeda..."
           />
-          <div className="icon-actions">
-            {loading && <i className="fas fa-spinner fa-spin small-text" style={{ color: '#ea5e13' }}></i>}
+          <div className="absolute top-1/2 right-6 flex -translate-y-1/2 items-center gap-3">
+            {loading && <i className={`fas fa-spinner fa-spin text-accent ${SMALL_TEXT}`}></i>}
             {searchQuery && (
               <button
-                className="clear-icon-btn"
+                className="flex cursor-pointer items-center border-none bg-none text-[1.8rem] text-primary transition-colors duration-300 hover:text-white 2xl:text-[2.5rem]"
                 onClick={handleClear}
                 title="Clear search"
               >
@@ -351,8 +242,8 @@ const SearchSection = ({ onSearchResults }) => {
         )}
 
         {noResultsFound && !loading && (
-          <div className="no-results-msg medium-text">
-            <i className="fas fa-search"></i> No results found.
+          <div className={`mt-8 text-center text-[#aaa] ${MEDIUM_TEXT}`}>
+            <i className="fas fa-search mr-2"></i>No results found.
           </div>
         )}
       </div>

@@ -22,31 +22,13 @@ const BackToTop = () => {
 
   return (
     <>
-      <style>
-        {`
-          .back-to-top-container {
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            margin-right: 1rem;
-            z-index: 1000;
-          }
-          .go-up-button {
-            background: rgba(234, 94, 19, 0.8);
-          }
-          .go-up-button:hover {
-            background: rgba(255, 111, 30, 0.9);
-            transform: scale(1.1);
-          }
-        `}
-      </style>
-      <div className="back-to-top-container">
+      <div className="fixed right-4 bottom-4 z-[1000] mr-4">
         <button
-          className="action-button go-up-button"
+          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-none bg-accent/80 backdrop-blur-[5px] transition-all duration-300 hover:scale-110 hover:bg-accent-hover/90"
           onClick={scrollToTop}
           title="Back to top"
         >
-          <i className="fas fa-arrow-up"></i>
+          <i className="fas fa-arrow-up text-base text-white"></i>
         </button>
       </div>
     </>

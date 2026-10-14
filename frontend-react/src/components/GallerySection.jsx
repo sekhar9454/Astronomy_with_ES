@@ -60,136 +60,8 @@ const GallerySection = ({ searchResults }) => {
 
   return (
     <>
-      <style>
-        {`
-          .gallery-container {
-            width: 100%;
-            margin-top: 1rem;
-            margin-bottom: 5rem;
-          }
-          .gallery_grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 2rem;
-            margin: 0 auto;
-          }
-          .gallery_card {
-            position: relative;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(234, 94, 19, 0.2);
-            overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-          }
-          .gallery_card:hover {
-            transform: translateY(-0.5rem);
-            box-shadow: 0 0.5rem 1.25rem rgba(234, 94, 19, 0.2);
-          }
-          .card_content {
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-          }
-          .image_container {
-            position: relative;
-            width: 100%;
-            height: 500px;
-            overflow: hidden;
-            background: rgba(255, 255, 255, 0.05);
-            cursor: pointer;
-            flex-shrink: 0;
-          }
-          .card_image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-          }
-          .card_image.image-loaded {
-            opacity: 1;
-          }
-          .gallery_card:hover .card_image {
-            transform: scale(1.05);
-          }
-          .card_delete_btn {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: rgba(220, 38, 38, 0.85);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 10;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-          }
-          .card_delete_btn:hover {
-            background: rgba(239, 68, 68, 1);
-            transform: scale(1.15);
-          }
-          .text_container {
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-          }
-          .card_title {
-            color: var(--primary-color);
-            margin: 0 0 1rem 0;
-            font-size: 2rem;
-            font-weight: bold;
-          }
-          .card_description {
-            color: #fff;
-            margin: 0;
-            line-height: 1.75;
-            flex-grow: 1;
-            font-size: 1rem;
-          }
-          .card_date {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 1rem;
-            margin-top: 1rem;
-            align-self: flex-end;
-          }
-          .image_loader {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(
-              90deg,
-              rgba(255, 255, 255, 0.05) 25%,
-              rgba(234, 94, 19, 0.1) 50%,
-              rgba(255, 255, 255, 0.05) 75%
-            );
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-          }
-          @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-          }
-          @media (max-width: 992px) {
-            .gallery_grid {
-              grid-template-columns: 1fr;
-            }
-            .image_container {
-              height: auto;
-              min-height: 300px;
-            }
-          }
-        `}
-      </style>
-      <div className="gallery-container">
-        <div className="gallery_grid">
+      <div className="mt-4 mb-20 w-full">
+        <div className="mx-auto grid grid-cols-1 gap-8 lg:grid-cols-2">
           {localResults.map((item, index) => {
             const source = item._source || item || {};
             const docId = source.id || item.id;
@@ -198,27 +70,27 @@ const GallerySection = ({ searchResults }) => {
             return (
               <div
                 key={`${docId || index}-${index}`}
-                className="gallery_card"
+                className="group relative overflow-hidden border border-accent/20 bg-white/5 transition-[transform,box-shadow] duration-300 hover:-translate-y-2 hover:shadow-[0_0.5rem_1.25rem_rgba(234,94,19,0.2)]"
               >
                 {docId && (
                   <button
-                    className="card_delete_btn"
+                    className="absolute top-4 right-4 z-10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-[#dc2626]/85 text-white shadow-[0_4px_12px_rgba(0,0,0,0.5)] transition-all duration-200 hover:scale-115 hover:bg-[#ef4444]"
                     onClick={(e) => handleDeleteDocument(docId, source.title, e)}
                     title="Delete APOD Record"
                   >
                     <i className="fas fa-trash-alt"></i>
                   </button>
                 )}
-                <div className="card_content">
+                <div className="flex flex-col items-stretch">
                   <div
-                    className="image_container"
+                    className="relative min-h-[300px] w-full shrink-0 cursor-pointer overflow-hidden bg-white/5 lg:h-[500px]"
                     onClick={() => handleShowImage({ ...source, id: docId, image_url: imageUrl })}
                   >
-                    {!isLoaded && <div className="image_loader"></div>}
+                    {!isLoaded && <div className="absolute inset-0 animate-shimmer bg-linear-90 from-white/5 from-25% via-accent/10 via-50% to-white/5 to-75% bg-size-[200%_100%]"></div>}
                     <img
                       src={imageUrl}
                       alt={source.title || 'APOD Image'}
-                      className={`card_image ${isLoaded ? 'image-loaded' : ''}`}
+                      className={`h-full w-full object-cover transition-[opacity,transform] duration-300 group-hover:scale-105 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
                       onLoad={() =>
                         setImageLoaded((prev) => ({ ...prev, [index]: true }))
                       }
@@ -227,10 +99,10 @@ const GallerySection = ({ searchResults }) => {
                       }
                     />
                   </div>
-                  <div className="text_container">
-                    <h2 className="card_title">{source.title || 'Untitled'}</h2>
-                    <p className="card_description">{source.explanation || 'No description available.'}</p>
-                    <span className="card_date">{source.date || ''}</span>
+                  <div className="relative flex flex-col p-6">
+                    <h2 className="mb-4 text-[2rem] font-bold text-primary">{source.title || 'Untitled'}</h2>
+                    <p className="grow text-base leading-[1.75] text-white">{source.explanation || 'No description available.'}</p>
+                    <span className="mt-4 self-end text-base text-white/70">{source.date || ''}</span>
                   </div>
                 </div>
               </div>

@@ -1,5 +1,8 @@
 import React, { useEffect } from 'react';
 
+const POPOVER_BTN =
+  'flex cursor-pointer items-center gap-[0.4rem] rounded border-none px-3 py-2 text-base text-white transition-all duration-200 hover:scale-105';
+
 const ImagePopover = ({ show, imageUrl, imageTitle, imageId, onDelete, onClose }) => {
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -15,87 +18,12 @@ const ImagePopover = ({ show, imageUrl, imageTitle, imageId, onDelete, onClose }
 
   return (
     <>
-      <style>
-        {`
-          .popover-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            animation: fadeIn 0.3s ease;
-          }
-          .popover-content {
-            position: relative;
-            max-width: 90vw;
-            max-height: 100vh;
-            padding-top: 3rem;
-            animation: scaleIn 0.3s ease;
-          }
-          .popover-image {
-            max-width: 100%;
-            max-height: 90vh;
-            object-fit: contain;
-            border: 2px solid var(--primary-color);
-            box-shadow: 0 0 1.25rem rgba(234, 94, 19, 0.3);
-          }
-          .button-container {
-            position: absolute;
-            top: 0;
-            right: 0;
-            display: flex;
-            gap: 0.5rem;
-            z-index: 1;
-          }
-          .popover-btn {
-            background: rgba(234, 94, 19, 0.8);
-            border: none;
-            color: white;
-            padding: 0.5rem 0.75rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            transition: all 0.2s ease;
-          }
-          .popover-btn:hover {
-            transform: scale(1.05);
-          }
-          .delete-btn-popover {
-            background: rgba(220, 38, 38, 0.85);
-          }
-          .delete-btn-popover:hover {
-            background: rgba(239, 68, 68, 1);
-          }
-          .close-button {
-            background: rgba(234, 94, 19, 0.8);
-          }
-          .close-button:hover {
-            background: rgba(255, 111, 30, 0.9);
-          }
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          @keyframes scaleIn {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-          }
-        `}
-      </style>
-      <div className="popover-overlay" onClick={onClose}>
-        <div className="popover-content" onClick={(e) => e.stopPropagation()}>
-          <div className="button-container">
+      <div className="fixed inset-0 z-[1000] flex animate-fade-in items-center justify-center bg-black/90" onClick={onClose}>
+        <div className="relative max-h-screen max-w-[90vw] animate-scale-in pt-12" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute top-0 right-0 z-[1] flex gap-2">
             {onDelete && imageId && (
               <button
-                className="popover-btn delete-btn-popover"
+                className={`${POPOVER_BTN} bg-[#dc2626]/85 hover:bg-[#ef4444]`}
                 onClick={(e) => onDelete(imageId, imageTitle, e)}
                 title="Delete APOD Record"
               >
@@ -103,7 +31,7 @@ const ImagePopover = ({ show, imageUrl, imageTitle, imageId, onDelete, onClose }
               </button>
             )}
             <button
-              className="popover-btn close-button"
+              className={`${POPOVER_BTN} bg-accent/80 hover:bg-accent-hover/90`}
               onClick={onClose}
               title="Close"
             >
@@ -113,7 +41,7 @@ const ImagePopover = ({ show, imageUrl, imageTitle, imageId, onDelete, onClose }
           <img
             src={imageUrl}
             alt={imageTitle || 'APOD Full View'}
-            className="popover-image"
+            className="max-h-[90vh] max-w-full border-2 border-primary object-contain shadow-[0_0_1.25rem_rgba(234,94,19,0.3)]"
           />
         </div>
       </div>

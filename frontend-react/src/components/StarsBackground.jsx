@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 
 const StarsBackground = () => {
   const numberOfStars = 60;
-  const starColors = ['#00b4ff', '#ffffff'];
+  const starColors = ['bg-star-blue', 'bg-white'];
 
   const stars = useMemo(() => {
     return Array.from({ length: numberOfStars }, (_, index) => {
@@ -22,38 +22,11 @@ const StarsBackground = () => {
 
   return (
     <>
-      <style>
-        {`
-          .stars-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            background-color: #080e1a;
-            overflow: hidden;
-            z-index: -1;
-          }
-          .star {
-            position: absolute;
-            border-radius: 50%;
-            animation: moveUpward linear infinite;
-          }
-          @keyframes moveUpward {
-            from {
-              transform: translateY(100vh);
-            }
-            to {
-              transform: translateY(-100vh);
-            }
-          }
-        `}
-      </style>
-      <div className="stars-container">
+      <div className="fixed inset-0 -z-1 h-screen overflow-hidden bg-space">
         {stars.map((star) => (
           <div
             key={star.id}
-            className="star"
+            className={`absolute animate-star rounded-full ${star.color}`}
             style={{
               left: `${star.x}%`,
               top: `${star.y}%`,
@@ -62,7 +35,6 @@ const StarsBackground = () => {
               opacity: star.opacity,
               animationDuration: `${star.duration}s`,
               animationDelay: `${star.delay}s`,
-              backgroundColor: star.color,
             }}
           />
         ))}

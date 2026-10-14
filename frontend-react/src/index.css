@@ -1,127 +1,43 @@
-:root {
-  --primary-color: #fffffe;
-  --primary-hover: #ff6f1e;
-  --bg-color: #080e1a;
-  --card-bg: rgba(255, 255, 255, 0.05);
-  --border-color: rgba(234, 94, 19, 0.2);
-  --text-main: #ffffff;
-  --text-muted: rgba(255, 255, 255, 0.7);
-}
+@import "tailwindcss";
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@theme {
+  --font-sans: "Roboto Condensed", sans-serif;
 
-body {
-  font-family: "Roboto Condensed", sans-serif;
-  background-color: var(--bg-color);
-  color: var(--text-main);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+  --color-primary: #fffffe;
+  --color-accent: #ea5e13;
+  --color-accent-hover: #ff6f1e;
+  --color-space: #080e1a;
+  --color-panel: #141826;
+  --color-star-blue: #00b4ff;
 
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-left: 20rem;
-  margin-right: 20rem;
-}
+  /* Mobile-first equivalents of the original max-width breakpoints (480/576/768/992/1440/1920px) */
+  --breakpoint-*: initial;
+  --breakpoint-xs: 481px;
+  --breakpoint-sm: 577px;
+  --breakpoint-md: 769px;
+  --breakpoint-lg: 993px;
+  --breakpoint-xl: 1441px;
+  --breakpoint-2xl: 1921px;
 
-.medium-text {
-  font-size: 1.75rem !important;
-}
+  --animate-fade-in: fade-in 0.3s ease;
+  --animate-scale-in: scale-in 0.3s ease;
+  --animate-shimmer: shimmer 1.5s infinite;
+  --animate-star: star-rise linear infinite;
 
-.small-text {
-  font-size: 1.5rem !important;
-}
-
-.align-vertical-center {
-  display: flex;
-  align-items: center;
-}
-
-.align-space-between {
-  display: flex;
-  justify-content: space-between;
-}
-
-.align-horizontal {
-  display: flex;
-}
-
-.action-button {
-  width: 2.5rem;
-  height: 2.5rem;
-  border: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(5px);
-}
-
-.action-button i {
-  font-size: 1rem;
-  color: white;
-}
-
-/* Responsive queries matching original design */
-@media screen and (max-width: 1920px) {
-  .container {
-    margin-left: 12rem;
-    margin-right: 12rem;
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
-  .medium-text {
-    font-size: 1.2rem !important;
+  @keyframes scale-in {
+    from { transform: scale(0.92); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
   }
-  .small-text {
-    font-size: 1rem !important;
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  @keyframes star-rise {
+    from { transform: translateY(100vh); }
+    to { transform: translateY(-100vh); }
   }
 }
-
-@media screen and (max-width: 1440px) {
-  .container {
-    margin-left: 5rem;
-    margin-right: 5rem;
-  }
-}
-
-@media screen and (max-width: 992px) {
-  .container {
-    margin-left: 3rem;
-    margin-right: 3rem;
-  }
-}
-
-@media screen and (max-width: 768px) {
-  .container {
-    margin-left: 3rem;
-    margin-right: 3rem;
-  }
-  .medium-text {
-    font-size: 0.8rem !important;
-  }
-  .small-text {
-    font-size: 0.6rem !important;
-  }
-}
-
-@media screen and (max-width: 576px) {
-  .container {
-    margin-left: 2rem;
-    margin-right: 2rem;
-  }
-}
-
-@media screen and (max-width: 480px) {
-  .container {
-    margin-left: 1rem;
-    margin-right: 1rem;
-  }
-}
-
