@@ -5,16 +5,12 @@ from datetime import datetime
 from app_backend.db import db
 from app_backend.models import Planet, OutboxEvent
 from app_backend.es_client import es_client
+from app_backend.controllers.errors import ServiceError
 
 logger = logging.getLogger(__name__)
 
-class PlanetServiceError(Exception):
-    def __init__(self, message, error_code="INVALID_INPUT", status_code=400, details=None):
-        super().__init__(message)
-        self.message = message
-        self.error_code = error_code
-        self.status_code = status_code
-        self.details = details or {}
+class PlanetServiceError(ServiceError):
+    pass
 
 class PlanetService:
     @staticmethod

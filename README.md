@@ -65,7 +65,7 @@ When a user types a search query (e.g. `"galaxy"`) into the search bar, the requ
                                                      v
 +-----------------------------------------------------------------------------------------------------------+
 |                                      2. FLASK BACKEND API ROUTER                                          |
-| app_backend/routes.py :: regular_search() receives request & parses parameters                            |
+| app_backend/routes/search_routes.py :: regular_search() parses params -> search_controller.regular_search()|
 +----------------------------------------------------+------------------------------------------------------+
                                                      |
                                                      | Tries Elasticsearch First
@@ -109,10 +109,11 @@ When a user types a search query (e.g. `"galaxy"`) into the search bar, the requ
 
 #### Layer 2: Flask API Gateway (`app_backend/`)
 - **[app.py](file:///home/sanskar/code/final_fs_dbms/app_backend/app.py)**: Initializes Flask app, configures CORS headers (`CORS(app)`), and registers API blueprint.
-- **[routes.py](file:///home/sanskar/code/final_fs_dbms/app_backend/routes.py)**:
-  - Endpoint handler: `@api_bp.route('/regular_search') def regular_search()`
-  - Reads query parameters: `search_query="galaxy"`, `skip=0`, `limit=10`, `tokenizer="standard"`.
-  - Checks if query is non-empty; delegates search logic to `es_client.search_regular()`.
+- **[routes/search_routes.py](file:///home/sanskar/code/final_fs_dbms/app_backend/routes/search_routes.py)**:
+  - Endpoint handler: `@search_bp.route('/regular_search') def regular_search()`
+  - Reads query parameters: `search_query="galaxy"`, `skip=0`, `limit=10`, `tokenizer="standard"`, and passes them to the controller.
+- **[controllers/search_controller.py](file:///home/sanskar/code/final_fs_dbms/app_backend/controllers/search_controller.py)**:
+  - Checks if query is non-empty; delegates search logic to `es_client.search_regular()`, falling back to PostgreSQL.
 
 #### Layer 3: Elasticsearch Search Engine (`app_backend/es_client.py`)
 - **[es_client.py](file:///home/sanskar/code/final_fs_dbms/app_backend/es_client.py)**:
@@ -144,7 +145,7 @@ When a user types a search query (e.g. `"galaxy"`) into the search bar, the requ
     ```
 
 #### Layer 5: Response Formatting & UI Display (`frontend-react/`)
-- **[routes.py](file:///home/sanskar/code/final_fs_dbms/app_backend/routes.py)**: Formats response as JSON:
+- **[routes/search_routes.py](file:///home/sanskar/code/final_fs_dbms/app_backend/routes/search_routes.py)**: Formats response as JSON:
   ```json
   {
     "total": 150,

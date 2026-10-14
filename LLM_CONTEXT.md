@@ -33,9 +33,19 @@ final_fs_dbms/
 │   ├── config.py                # Environment configuration loader (Postgres/SQLite, ES URLs)
 │   ├── db.py                    # Shared SQLAlchemy db instance
 │   ├── models.py                # SQLAlchemy ORM models (ApodDocument, Planet)
-│   ├── routes.py                # REST API Blueprint routes (/api/v1/*)
+│   ├── routes/                  # HTTP layer only: Blueprints, request parsing, JSON responses
+│   │   ├── __init__.py          # api_v1 parent Blueprint (/api/v1) + register_routes(app)
+│   │   ├── health_routes.py     # /health
+│   │   ├── search_routes.py     # /regular_search, /semantic_search, /get_docs_per_year_count
+│   │   ├── document_routes.py   # /documents CRUD, /sync_db_to_es
+│   │   └── planet_routes.py     # /planets
+│   ├── controllers/             # Business logic, DB queries, ES calls (no Flask request/jsonify)
+│   │   ├── errors.py            # ServiceError (message, error_code, status_code, details)
+│   │   ├── health_controller.py
+│   │   ├── search_controller.py # ES search with PostgreSQL fallback, planet merge, dedup
+│   │   ├── document_controller.py
+│   │   └── planet_controller.py # PlanetService: Planet validation, insert, ES/outbox sync
 │   ├── es_client.py             # Elasticsearch wrapper, indexing logic, fallback & deduplication
-│   ├── planet_service.py        # Business logic for Planet entity CRUD operations
 │   └── seed_data.py             # Ingestion script: seeds DB from data/apod.json & indexes to ES
 ├── data/
 │   └── apod.json                # JSON dataset containing 3,333 APOD records
@@ -106,7 +116,7 @@ When a user executes a search request in the UI:
 [User Input: "galaxy"] 
        │
        ▼
-[SearchSection.jsx] ──(HTTP GET /api/v1/regular_search?search_query=galaxy&skip=0&limit=10)──► [routes.py]
+[SearchSection.jsx] ──(HTTP GET /api/v1/regular_search?search_query=galaxy&skip=0&limit=10)──► [routes/search_routes.py → controllers/search_controller.py]
                                                                                                   │
                                                    ┌──────────────────────────────────────────────┘
                                                    ▼
@@ -133,7 +143,7 @@ When a user executes a search request in the UI:
 
 ---
 
-## 5. API Endpoints Reference (`app_backend/routes.py` & `planet_service.py`)
+## 5. API Endpoints Reference (`app_backend/routes/` & `app_backend/controllers/`)
 
 | Method | Endpoint | Description | Query / Body Parameters |
 |---|---|---|---|

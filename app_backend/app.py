@@ -2,7 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from app_backend.config import Config
 from app_backend.db import db
-from app_backend.routes import api_bp
+from app_backend.routes import register_routes
 from app_backend.es_client import es_client
 
 def create_app(config_class=Config):
@@ -16,7 +16,7 @@ def create_app(config_class=Config):
     db.init_app(app)
 
     # Register Blueprints
-    app.register_blueprint(api_bp)
+    register_routes(app)
 
     # Ensure indices exist if ES is online
     with app.app_context():
