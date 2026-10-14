@@ -46,9 +46,9 @@ final_fs_dbms/
 │   │   ├── document_controller.py
 │   │   └── planet_controller.py # PlanetService: Planet validation, insert, ES/outbox sync
 │   ├── es_client.py             # Elasticsearch wrapper, indexing logic, fallback & deduplication
-│   └── seed_data.py             # Ingestion script: seeds DB from data/apod.json & indexes to ES
-├── data/
-│   └── apod.json                # JSON dataset containing 3,333 APOD records
+│   ├── apod.json                # JSON dataset: 3,333 APOD records with NASA image URLs
+│   └── seed_data.py             # Ingestion script: seeds DB from app_backend/apod.json & indexes to ES
+├── data/                        # Auxiliary datasets (synonyms, raw/dummy data)
 ├── frontend-react/              # React.js Vite Frontend Application
 │   ├── package.json             # Frontend dependencies (React 18, Axios, Lucide-React, Vite)
 │   ├── vite.config.js           # Vite dev server configuration (port 3000, proxy settings)
