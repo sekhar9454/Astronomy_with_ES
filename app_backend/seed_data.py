@@ -1,5 +1,6 @@
 import os
 import json
+import argparse
 from datetime import datetime
 import logging
 from app_backend.app import create_app
@@ -12,11 +13,16 @@ logger = logging.getLogger(__name__)
 
 DATA_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'apod.json')
 
-def seed_database_and_es():
+def seed_database_and_es(drop_existing=False, recreate_es=True, generate_embeddings=True):
     app = create_app()
     with app.app_context():
-        logger.info("Initializing Neon PostgreSQL database tables...")
+        logger.info("Initializing Neon PostgreSQL / SQLite database tables...")
         db.create_all()
+
+        if drop_existing:
+            logger.info("Drop requested: Clearing existing ApodDocument records from database...")
+            ApodDocument.query.delete()
+            db.session.commit()
 
         if not os.path.exists(DATA_FILE_PATH):
             logger.error(f"Data file not found at {DATA_FILE_PATH}")
@@ -28,10 +34,11 @@ def seed_database_and_es():
 
         logger.info(f"Loaded {len(records)} items from JSON.")
 
-        # Existing dates map to avoid duplicate key errors
-        existing_dates = {d.date for d in ApodDocument.query.with_entities(ApodDocument.date).all()}
-
+        # Existing dates in DB for fast lookup
+        existing_dates = {d.date for d in db.session.query(ApodDocument.date).all()}
+        
         new_documents = []
+
         for item in records:
             raw_date = item.get('date')
             if not raw_date:
@@ -64,30 +71,42 @@ def seed_database_and_es():
             existing_dates.add(doc_date)
 
         if new_documents:
-            logger.info(f"Inserting {len(new_documents)} new documents into Neon PostgreSQL...")
-            # Batch insertion in chunks
+            logger.info(f"Inserting {len(new_documents)} new documents into database...")
             chunk_size = 500
             for i in range(0, len(new_documents), chunk_size):
                 db.session.add_all(new_documents[i:i + chunk_size])
                 db.session.commit()
-            logger.info("PostgreSQL seeding complete.")
-        else:
-            logger.info("No new documents to insert into PostgreSQL.")
+            logger.info("Database document insertion complete.")
 
         # Index into Elasticsearch
         all_docs = ApodDocument.query.all()
-        logger.info(f"Total documents in database: {len(all_docs)}")
+        logger.info(f"Total documents in database ready for ES indexing: {len(all_docs)}")
 
         if es_client.is_available():
-            logger.info("Initializing Elasticsearch indices and bulk indexing...")
-            es_client.init_indices()
-            success = es_client.bulk_index_documents(all_docs)
-            if success:
-                logger.info("Elasticsearch bulk indexing completed successfully!")
+            if recreate_es:
+                logger.info("Flushing and recreating Elasticsearch indices ('apod', 'apod_n_gram', 'apod_embedding')...")
+                es_client.recreate_indices()
             else:
-                logger.warning("Elasticsearch bulk indexing finished with warnings/errors.")
+                es_client.init_indices()
+
+            logger.info("Bulk indexing documents into Elasticsearch (standard, edge n-gram, and dense vector embeddings)...")
+            success = es_client.bulk_index_documents(all_docs, generate_embeddings=generate_embeddings)
+            if success:
+                logger.info("Elasticsearch re-seeding and indexing completed successfully!")
+            else:
+                logger.warning("Elasticsearch indexing finished with warnings/errors.")
         else:
-            logger.warning("Elasticsearch is currently unavailable. Data is safe in Neon PostgreSQL.")
+            logger.warning("Elasticsearch is currently unavailable. Data is safe in database.")
 
 if __name__ == '__main__':
-    seed_database_and_es()
+    parser = argparse.ArgumentParser(description="Seed APOD database and Elasticsearch indices.")
+    parser.add_argument('--drop', action='store_true', help="Drop existing database records before seeding.")
+    parser.add_argument('--no-recreate-es', action='store_true', help="Do not clear Elasticsearch indices before indexing.")
+    parser.add_argument('--no-embeddings', action='store_true', help="Skip vector embeddings generation.")
+    args = parser.parse_args()
+
+    seed_database_and_es(
+        drop_existing=args.drop,
+        recreate_es=not args.no_recreate_es,
+        generate_embeddings=not args.no_embeddings
+    )

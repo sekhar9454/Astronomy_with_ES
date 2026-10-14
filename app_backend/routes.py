@@ -176,6 +176,28 @@ def create_document():
         "document": doc.to_dict()
     }), 201
 
+@api_bp.route('/documents/<int:doc_id>', methods=['GET'])
+def get_document_by_id(doc_id):
+    doc = ApodDocument.query.get_or_404(doc_id)
+    return jsonify(doc.to_dict()), 200
+
+@api_bp.route('/documents/<int:doc_id>', methods=['DELETE'])
+def delete_document_endpoint(doc_id):
+    doc = ApodDocument.query.get_or_404(doc_id)
+
+    # 1. Delete from Elasticsearch across indices
+    if es_client.is_available():
+        es_client.delete_document(doc_id, date=doc.date)
+
+    # 2. Delete from Database
+    db.session.delete(doc)
+    db.session.commit()
+
+    return jsonify({
+        "status": "success",
+        "message": f"Document {doc_id} deleted from database and search index."
+    }), 200
+
 @api_bp.route('/sync_db_to_es', methods=['POST'])
 def sync_db_to_es():
     if not es_client.is_available():

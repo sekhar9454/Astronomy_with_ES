@@ -1,20 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import ImagePopover from './ImagePopover';
 
 const GallerySection = ({ searchResults }) => {
   const [imageLoaded, setImageLoaded] = useState({});
   const [showPopover, setShowPopover] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [localResults, setLocalResults] = useState([]);
 
-  const rawResults = searchResults?.results || [];
-  const seenKeys = new Set();
-  const results = rawResults.filter((item) => {
-    const source = item._source || item || {};
-    const key = `${(source.title || '').trim().toLowerCase()}-${source.date || ''}`;
-    if (seenKeys.has(key)) return false;
-    seenKeys.add(key);
-    return true;
-  });
+  useEffect(() => {
+    const rawResults = searchResults?.results || searchResults?.hits || searchResults?.documents || [];
+    const seenKeys = new Set();
+    const filtered = rawResults.filter((item) => {
+      const source = item._source || item || {};
+      const key = `${(source.title || '').trim().toLowerCase()}-${source.date || ''}`;
+      if (seenKeys.has(key)) return false;
+      seenKeys.add(key);
+      return true;
+    });
+    setLocalResults(filtered);
+  }, [searchResults]);
 
   const handleShowImage = (item) => {
     setSelectedImage(item);
@@ -24,6 +29,33 @@ const GallerySection = ({ searchResults }) => {
   const handleClosePopover = () => {
     setShowPopover(false);
     setSelectedImage(null);
+  };
+
+  const handleDeleteDocument = async (docId, title, e) => {
+    if (e) e.stopPropagation();
+    if (!docId) {
+      alert("Unable to delete: Missing document ID.");
+      return;
+    }
+
+    const confirmed = window.confirm(`Are you sure you want to delete "${title || 'this APOD record'}"?`);
+    if (!confirmed) return;
+
+    try {
+      await axios.delete(`/api/v1/documents/${docId}`);
+      setLocalResults((prev) => prev.filter((item) => {
+        const source = item._source || item || {};
+        return source.id !== docId && item.id !== docId;
+      }));
+      if (selectedImage && selectedImage.id === docId) {
+        handleClosePopover();
+      }
+      alert(`Record "${title || docId}" deleted successfully.`);
+    } catch (err) {
+      console.error('Delete document failed:', err);
+      const errMsg = err.response?.data?.error || err.response?.data?.message || err.message;
+      alert(`Failed to delete record: ${errMsg}`);
+    }
   };
 
   return (
@@ -42,6 +74,7 @@ const GallerySection = ({ searchResults }) => {
             margin: 0 auto;
           }
           .gallery_card {
+            position: relative;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(234, 94, 19, 0.2);
             overflow: hidden;
@@ -77,6 +110,28 @@ const GallerySection = ({ searchResults }) => {
           }
           .gallery_card:hover .card_image {
             transform: scale(1.05);
+          }
+          .card_delete_btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(220, 38, 38, 0.85);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+          }
+          .card_delete_btn:hover {
+            background: rgba(239, 68, 68, 1);
+            transform: scale(1.15);
           }
           .text_container {
             padding: 1.5rem;
@@ -135,19 +190,29 @@ const GallerySection = ({ searchResults }) => {
       </style>
       <div className="gallery-container">
         <div className="gallery_grid">
-          {results.map((item, index) => {
+          {localResults.map((item, index) => {
             const source = item._source || item || {};
+            const docId = source.id || item.id;
             const imageUrl = source.image_url || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800&auto=format&fit=crop';
             const isLoaded = imageLoaded[index];
             return (
               <div
-                key={`${source.id || index}-${index}`}
+                key={`${docId || index}-${index}`}
                 className="gallery_card"
               >
+                {docId && (
+                  <button
+                    className="card_delete_btn"
+                    onClick={(e) => handleDeleteDocument(docId, source.title, e)}
+                    title="Delete APOD Record"
+                  >
+                    <i className="fas fa-trash-alt"></i>
+                  </button>
+                )}
                 <div className="card_content">
                   <div
                     className="image_container"
-                    onClick={() => handleShowImage({ ...source, image_url: imageUrl })}
+                    onClick={() => handleShowImage({ ...source, id: docId, image_url: imageUrl })}
                   >
                     {!isLoaded && <div className="image_loader"></div>}
                     <img
@@ -176,6 +241,8 @@ const GallerySection = ({ searchResults }) => {
           show={showPopover}
           imageUrl={selectedImage?.image_url}
           imageTitle={selectedImage?.title}
+          imageId={selectedImage?.id}
+          onDelete={handleDeleteDocument}
           onClose={handleClosePopover}
         />
       </div>

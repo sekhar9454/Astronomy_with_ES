@@ -183,9 +183,86 @@ class ESClientWrapper:
             logger.error(f"Error creating Elasticsearch indices: {e}")
             return False
 
-    def bulk_index_documents(self, documents):
+    def recreate_indices(self):
+        """
+        Deletes and re-creates all APOD indices to clear stale documents during re-seeding.
+        """
+        if not self.is_available():
+            logger.warning("Elasticsearch unavailable. Skipping index recreation.")
+            return False
+
+        for idx in [INDEX_STANDARD, INDEX_NGRAM, INDEX_EMBEDDING]:
+            try:
+                if self._client.indices.exists(index=idx):
+                    self._client.indices.delete(index=idx)
+            except Exception as e:
+                logger.warning(f"Error deleting index {idx}: {e}")
+
+        return self.init_indices()
+
+    def delete_document(self, doc_id, date=None):
+        """
+        Deletes a document by ID and optional date across all APOD Elasticsearch indices:
+        INDEX_STANDARD ('apod'), INDEX_NGRAM ('apod_n_gram'), and INDEX_EMBEDDING ('apod_embedding').
+        Safe against offline ES or missing documents.
+        """
+        if not self.is_available():
+            logger.warning(f"Elasticsearch unavailable. Skipping delete for document {doc_id}.")
+            return False
+
+        indices = [INDEX_STANDARD, INDEX_NGRAM, INDEX_EMBEDDING]
+        date_str = date.isoformat() if hasattr(date, 'isoformat') else (str(date) if date else None)
+
+        for index_name in indices:
+            try:
+                if not self._client.indices.exists(index=index_name):
+                    continue
+
+                deleted = False
+                # 1. Try direct ID delete
+                try:
+                    res = self._client.delete(index=index_name, id=str(doc_id))
+                    if res.get('result') in ['deleted', 'found']:
+                        deleted = True
+                except Exception as ex:
+                    logger.debug(f"Direct ES delete by _id '{doc_id}' on '{index_name}' yielded: {ex}")
+
+                # 2. Fallback to delete_by_query if direct delete didn't find the record
+                if not deleted:
+                    should_conditions = [
+                        {"term": {"id": doc_id}},
+                        {"term": {"_id": str(doc_id)}}
+                    ]
+                    if date_str:
+                        should_conditions.append({"term": {"date": date_str}})
+
+                    query_body = {
+                        "query": {
+                            "bool": {
+                                "should": should_conditions,
+                                "minimum_should_match": 1
+                            }
+                        }
+                    }
+                    self._client.delete_by_query(index=index_name, body=query_body, ignore_unavailable=True)
+
+                self._client.indices.refresh(index=index_name)
+            except Exception as e:
+                logger.warning(f"Warning during ES document {doc_id} deletion from index '{index_name}': {e}")
+
+        return True
+
+    def bulk_index_documents(self, documents, generate_embeddings=False):
         if not self.is_available():
             return False
+
+        model = None
+        if generate_embeddings:
+            try:
+                from sentence_transformers import SentenceTransformer
+                model = SentenceTransformer('all-MiniLM-L6-v2')
+            except Exception as e:
+                logger.warning(f"Could not load SentenceTransformer for vector embeddings: {e}")
 
         actions = []
         for doc in documents:
@@ -212,10 +289,23 @@ class ESClientWrapper:
                 "_source": doc_data
             })
 
+            if model and doc.explanation:
+                try:
+                    vec = model.encode(doc.explanation).tolist()
+                    embed_data = {**doc_data, "embedding": vec}
+                    actions.append({
+                        "_index": INDEX_EMBEDDING,
+                        "_id": doc_id,
+                        "_source": embed_data
+                    })
+                except Exception as ve:
+                    logger.warning(f"Failed to generate embedding for doc {doc.id}: {ve}")
+
         try:
             helpers.bulk(self._client, actions)
-            self._client.indices.refresh(index=INDEX_STANDARD)
-            self._client.indices.refresh(index=INDEX_NGRAM)
+            for idx in [INDEX_STANDARD, INDEX_NGRAM, INDEX_EMBEDDING]:
+                if self._client.indices.exists(index=idx):
+                    self._client.indices.refresh(index=idx)
             return True
         except Exception as e:
             logger.error(f"Error during bulk indexing: {e}")
