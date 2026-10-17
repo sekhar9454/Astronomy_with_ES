@@ -24,7 +24,10 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 280}
 
     # Browser origins allowed to call /api/* (comma-separated), e.g. "https://my-app.vercel.app"
-    CORS_ORIGINS = [o.strip() for o in os.environ.get('CORS_ORIGINS', '*').split(',') if o.strip()] or ['*']
+    # Quotes, spaces and trailing slashes are stripped: browsers send the origin as scheme://host[:port] only
+    CORS_ORIGINS = [o.strip().strip('"\'').strip().rstrip('/')
+                    for o in os.environ.get('CORS_ORIGINS', '*').split(',')]
+    CORS_ORIGINS = [o for o in CORS_ORIGINS if o] or ['*']
 
     # Elasticsearch configuration (set ELASTICSEARCH_ENABLED=false to always use the PostgreSQL fallback)
     ELASTICSEARCH_ENABLED = os.environ.get('ELASTICSEARCH_ENABLED', 'true').strip().lower() not in ('0', 'false', 'no', 'off')
