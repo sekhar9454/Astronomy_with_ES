@@ -1,0 +1,27 @@
+# Render Blueprint: deploys the Flask API as a free web service.
+# Render dashboard -> New -> Blueprint -> select this repo.
+services:
+  - type: web
+    name: apod-search-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app_backend.app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60 --access-logfile -
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: PYTHONPATH
+        value: .
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false # Neon connection string, entered in the dashboard
+      - key: CORS_ORIGINS
+        sync: false # e.g. https://your-app.vercel.app
+      - key: ELASTICSEARCH_ENABLED
+        value: "false" # set to true once ELASTICSEARCH_NODE points at a hosted cluster
+      - key: ELASTICSEARCH_NODE
+        sync: false # optional, e.g. a Bonsai or Elastic Cloud URL

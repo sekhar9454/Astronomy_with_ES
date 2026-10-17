@@ -20,10 +20,14 @@ class Config:
         SQLALCHEMY_DATABASE_URI = raw_db_url
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    # Check pooled connections before use; Neon closes idle SSL connections
-    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
+    # Check pooled connections before use and recycle them before Neon's idle timeout
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 280}
 
-    # Elasticsearch configuration
+    # Browser origins allowed to call /api/* (comma-separated), e.g. "https://my-app.vercel.app"
+    CORS_ORIGINS = [o.strip() for o in os.environ.get('CORS_ORIGINS', '*').split(',') if o.strip()] or ['*']
+
+    # Elasticsearch configuration (set ELASTICSEARCH_ENABLED=false to always use the PostgreSQL fallback)
+    ELASTICSEARCH_ENABLED = os.environ.get('ELASTICSEARCH_ENABLED', 'true').strip().lower() not in ('0', 'false', 'no', 'off')
     ELASTICSEARCH_NODE = os.environ.get('ELASTICSEARCH_NODE', os.environ.get('ELASTICSEARCH_URL', 'http://localhost:9200'))
     ELASTICSEARCH_API_KEY = os.environ.get('ELASTICSEARCH_API_KEY', '')
     ELASTICSEARCH_USERNAME = os.environ.get('ELASTICSEARCH_USERNAME', os.environ.get('ELASTICSEARCH_USER', ''))

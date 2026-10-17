@@ -10,7 +10,8 @@ INDEX_NGRAM = 'apod_n_gram'
 INDEX_EMBEDDING = 'apod_embedding'
 
 class ESClientWrapper:
-    def __init__(self, node=None, api_key=None, username=None, password=None):
+    def __init__(self, node=None, api_key=None, username=None, password=None, enabled=None):
+        self.enabled = Config.ELASTICSEARCH_ENABLED if enabled is None else enabled
         self.node = node or Config.ELASTICSEARCH_NODE
         self.api_key = api_key or Config.ELASTICSEARCH_API_KEY
         self.username = username or Config.ELASTICSEARCH_USERNAME
@@ -19,6 +20,9 @@ class ESClientWrapper:
         self._init_client()
 
     def _init_client(self):
+        if not self.enabled:
+            logger.info("Elasticsearch disabled (ELASTICSEARCH_ENABLED=false); using PostgreSQL fallback.")
+            return
         try:
             kwargs = {'request_timeout': 5}
             if self.api_key:
