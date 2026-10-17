@@ -25,12 +25,13 @@ final_fs_dbms/
 ├── README.md                    # Project quickstart and setup instructions
 ├── IMPLEMENTATION_PLAN.md       # Historical technical design / migration plan
 ├── requirements.txt             # Backend Python dependencies
+├── render.yaml                  # Render Blueprint: free web service, gunicorn start command, env vars
 ├── .gitignore                   # Ignores .env, .venv, __pycache__, node_modules, dist, *.db, instance/, *.bak
 ├── .env.example                 # Template for .env (placeholders only; .env itself is git-ignored)
 ├── app_backend/                 # Flask REST API Backend
 │   ├── __init__.py              # Package init
 │   ├── app.py                   # create_app(): config, CORS (/api/*), db.init_app, register_routes(app), ES index init
-│   ├── config.py                # Environment configuration loader (Postgres/SQLite, ES URLs, PORT)
+│   ├── config.py                # Env config: DB URL + pool options, CORS_ORIGINS, ELASTICSEARCH_ENABLED/NODE, PORT
 │   ├── db.py                    # Shared SQLAlchemy db instance
 │   ├── models.py                # SQLAlchemy ORM models (ApodDocument, Planet, OutboxEvent)
 │   ├── routes/                  # HTTP layer only: Blueprints, request parsing, JSON responses
@@ -187,7 +188,8 @@ Error response shapes: document endpoints return `{"error": "<message>"}`; plane
    - Theme tokens: colors `primary` (#fffffe), `accent` (#ea5e13), `accent-hover`, `space` (#080e1a, page background), `panel`, `star-blue`; font `sans` = Roboto Condensed; animations `fade-in`, `scale-in`, `shimmer`, `star`.
    - Custom breakpoints replace the defaults to mirror the original desktop-first design: `xs` 481px, `sm` 577px, `md` 769px, `lg` 993px, `xl` 1441px, `2xl` 1921px (classes are written mobile-first).
    - Repeated class lists live in constants (`styles/text.js`, or `FIELD` / `SELECT` / `PAGE_BTN` / `POPOVER_BTN` at the top of a component). Only runtime-random star values remain as inline `style`.
-7. **Frontend → Backend URL**: Components call `${VITE_API_BASE_URL || 'http://localhost:5000'}/api/v1/...`; there is no Vite proxy. The tokenizer dropdown labels (`Standard`, `N-Gram`) are mapped to the API values `standard` / `n_gram` via `TOKENIZER_PARAMS` in `SearchSection.jsx`.
+7. **Deployment**: Render runs `gunicorn app_backend.app:app` (see `render.yaml`), Vercel serves the Vite build from `frontend-react/`. `CORS_ORIGINS` restricts browser origins; `ELASTICSEARCH_ENABLED=false` forces the PostgreSQL fallback; HTTP errors under `/api/` are returned as JSON `{"error": ...}`.
+8. **Frontend → Backend URL**: Components call `${VITE_API_BASE_URL || 'http://localhost:5000'}/api/v1/...`; there is no Vite proxy. The tokenizer dropdown labels (`Standard`, `N-Gram`) are mapped to the API values `standard` / `n_gram` via `TOKENIZER_PARAMS` in `SearchSection.jsx`.
 
 ---
 
